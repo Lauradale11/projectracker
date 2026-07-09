@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elevenish — Project Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=PT+Sans:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ocean-teal: #2d6e72;
+    --ocean-teal-dark: #1f4f52;
+    --lavender: #b9a7d9;
+    --lavender-soft: #ece6f5;
+    --warm-white: #faf7f2;
+    --near-black: #1c1b1a;
+    --paper: #ffffff;
+    --line: #e4ddd0;
+    --font-display: 'Cormorant Garamond', serif;
+    --font-body: 'PT Sans', sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--warm-white);
+    color: var(--near-black);
+    font-family: var(--font-body);
+    min-height: 100vh;
+  }
+  header {
+    padding: 40px 40px 24px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ocean-teal);
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  h1 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 38px;
+    margin: 0 0 4px;
+  }
+  header p.sub { margin: 0; color: #6b6459; font-size: 13px; }
+  .save-status {
+    font-size: 11px;
+    color: #948c7d;
+    font-style: italic;
+    min-width: 90px;
+    text-align: right;
+  }
+  .board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--line);
+    padding: 1px;
+    margin: 32px 40px 64px;
+  }
+  .column { background: var(--warm-white); min-height: 70vh; display: flex; flex-direction: column; }
+  .column-head { padding: 18px 20px 14px; border-bottom: 2px solid var(--near-black); display: flex; align-items: baseline; justify-content: space-between; }
+  .column-head h2 { font-family: var(--font-display); font-weight: 600; font-style: italic; font-size: 22px; margin: 0; }
+  .count { font-size: 11px; color: #948c7d; border: 1px solid var(--line); border-radius: 20px; padding: 2px 9px; }
+  .column[data-status="todo"] .column-head { border-color: #948c7d; }
+  .column[data-status="progress"] .column-head { border-color: var(--lavender); }
+  .column[data-status="done"] .column-head { border-color: var(--ocean-teal); }
+  .card-list { flex: 1; padding: 16px; display: flex; flex-direction: column; gap: 12px; min-height: 40px; }
+  .card-list.drag-over { background: var(--lavender-soft); }
+  .card { background: var(--paper); border: 1px solid var(--line); border-left: 3px solid var(--ocean-teal); padding: 14px 16px; cursor: grab; transition: box-shadow 0.15s ease, transform 0.15s ease; }
+  .column[data-status="progress"] .card { border-left-color: var(--lavender); }
+  .column[data-status="done"] .card { border-left-color: var(--ocean-teal); opacity: 0.7; }
+  .card:hover { box-shadow: 0 4px 14px rgba(28,27,26,0.08); }
+  .card.dragging { opacity: 0.4; transform: scale(0.98); }
+  .card-title { font-weight: 700; font-size: 14px; line-height: 1.4; margin: 0 0 6px; }
+  .card-tag { display: inline-block; font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ocean-teal-dark); background: #e8f0ef; border-radius: 3px; padding: 2px 7px; margin-bottom: 8px; }
+  .card-note { font-size: 12.5px; color: #6b6459; margin: 0; line-height: 1.6; white-space: pre-line; }
+  .add-row { padding: 16px; border-top: 1px dashed var(--line); }
+  .add-row input { width: 100%; border: none; background: transparent; font-family: var(--font-body); font-size: 13px; padding: 6px 2px; color: var(--near-black); }
+  .add-row input::placeholder { color: #aba391; }
+  .add-row input:focus { outline: none; }
+  .delete-x { float: right; color: #c9c1b2; font-size: 13px; cursor: pointer; line-height: 1; }
+  .delete-x:hover { color: #b5463f; }
+  [contenteditable]:focus { outline: none; background: #fdf9f4; border-radius: 2px; }
+  [contenteditable]:hover { background: #fdf9f4; border-radius: 2px; }
+  .card-title[contenteditable] { cursor: text; }
+  .card-note[contenteditable] { cursor: text; }
+  .card-note-empty:before { content: attr(data-placeholder); color: #c9c1b2; font-style: italic; pointer-events: none; }
+  .reset-link { font-size: 11px; color: #948c7d; text-decoration: underline; cursor: pointer; background: none; border: none; font-family: var(--font-body); padding: 0; }
+  .reset-link:hover { color: var(--ocean-teal); }
+  @media (max-width: 800px) {
+    .board { grid-template-columns: 1fr; }
+    header { padding: 28px 20px 18px; }
+    .board { margin: 24px 20px 48px; }
+    h1 { font-size: 28px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="eyebrow">Elevenish</div>
+    <h1>Project Tracker</h1>
+    <p class="sub">Drag cards between columns. Click × to remove, type + Enter to add. Saves automatically.</p>
+  </div>
+  <div>
+    <div class="save-status" id="saveStatus">loading…</div>
+  </div>
+</header>
+
+<div class="board" id="board">
+  <div class="column" data-status="todo">
+    <div class="column-head"><h2>To Do</h2><span class="count" id="count-todo"></span></div>
+    <div class="card-list" id="todo"></div>
+    <div class="add-row"><input type="text" placeholder="+ Add a card..." onkeydown="addCard(event, 'todo')"></div>
+  </div>
+  <div class="column" data-status="progress">
+    <div class="column-head"><h2>In Progress</h2><span class="count" id="count-progress"></span></div>
+    <div class="card-list" id="progress"></div>
+    <div class="add-row"><input type="text" placeholder="+ Add a card..." onkeydown="addCard(event, 'progress')"></div>
+  </div>
+  <div class="column" data-status="done">
+    <div class="column-head"><h2>Done</h2><span class="count" id="count-done"></span></div>
+    <div class="card-list" id="done"></div>
+    <div class="add-row"><input type="text" placeholder="+ Add a card..." onkeydown="addCard(event, 'done')"></div>
+  </div>
+</div>
+
+<script>
+  const STORAGE_KEY = 'elevenish-tracker-board';
+
+  const defaultState = {
+    todo: [
+      { id: 't1', tag: 'Offer', title: 'Finalize Weekend Brand Shoot package', note: 'Lock the number of edited photos included so the offer is fully defined.' },
+      { id: 't2', tag: 'Outreach', title: 'Write outreach DM template', note: 'For direct prospecting to Miami-area businesses with weak brand photography.' },
+      { id: 't3', tag: 'Website', title: 'Build landing / booking page', note: 'One clean page + booking link — enough to start converting alongside the two case studies.' },
+      { id: 't4', tag: 'Bio', title: 'Decide personal IG bio direction', note: 'Choose between the punchy, conversational, or bold-lead rewrite.' },
+      { id: 't5', tag: 'Website', title: 'Add a third case study', note: 'Wildwood Flower Co. page using the existing CSS variable system.' },
+      { id: 't6', tag: 'Content', title: 'Carousel/post — Things I\'ve Learned', note: '• Find your crew — life by yourself is really hard to live.\n• Some problems just need a run away to get solved.\n• The cure for it is having a project you feel proud of.\n• You\'re way stronger than you think.' }
+    ],
+    progress: [
+      { id: 'p1', tag: 'Content', title: 'LinkedIn carousel — "This Is Not AI"', note: 'Founder slides for Gabriel, Ashley, Chris + booking CTA.' },
+      { id: 'p2', tag: 'Content', title: 'Reel script — "Still Paying for Asana?"', note: 'Screen-record of building this tracker in Claude.' },
+      { id: 'p3', tag: 'Outreach', title: 'Weekly local outreach', note: 'Target: 3–5 qualified inquiries/week toward one weekend session booked.' }
+    ],
+    done: [
+      { id: 'd1', tag: 'Website', title: 'Green Cardigan case study', note: 'Built using Elevenish CSS system, sourced from live site copy.' },
+      { id: 'd2', tag: 'Website', title: 'SwiftFi case study', note: 'Full brand system: strategy, voice, visual identity.' },
+      { id: 'd3', tag: 'Instagram', title: 'Switch to Creator account', note: 'Retains full music library access for Reels.' },
+      { id: 'd4', tag: 'Content', title: 'Monthly content matrix', note: 'Storytelling / Breakdowns / Ratings / Scenarios × Carousels / Reels.' }
+    ]
+  };
+
+  let state = null;
+  let dragged = null;
+  let saveTimer = null;
+
+  function setStatus(text) {
+    document.getElementById('saveStatus').textContent = text;
+  }
+
+  async function loadState() {
+    try {
+      const result = await window.storage.get(STORAGE_KEY, false);
+      state = result && result.value ? JSON.parse(result.value) : structuredClone(defaultState);
+    } catch (e) {
+      state = structuredClone(defaultState);
+    }
+    render();
+    setStatus('');
+  }
+
+  function saveState() {
+    setStatus('saving…');
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(async () => {
+      try {
+        const result = await window.storage.set(STORAGE_KEY, JSON.stringify(state), false);
+        setStatus(result ? 'saved' : 'save failed');
+        setTimeout(() => setStatus(''), 1500);
+      } catch (e) {
+        setStatus('save failed');
+      }
+    }, 300);
+  }
+
+  function cardHTML(card) {
+    const note = card.note
+      ? `<p class="card-note" contenteditable="true" data-field="note" spellcheck="false">${escapeHTML(card.note)}</p>`
+      : `<p class="card-note card-note-empty" contenteditable="true" data-field="note" data-placeholder="Add a note…" spellcheck="false"></p>`;
+    const tag = card.tag ? `<span class="card-tag">${escapeHTML(card.tag)}</span>` : '';
+    return `<div class="card" draggable="true" data-id="${card.id}">
+      <span class="delete-x" onclick="deleteCard('${card.id}')">×</span>
+      ${tag}
+      <p class="card-title" contenteditable="true" data-field="title" spellcheck="false">${escapeHTML(card.title)}</p>
+      ${note}
+    </div>`;
+  }
+
+  function escapeHTML(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function render() {
+    ['todo', 'progress', 'done'].forEach(col => {
+      const list = document.getElementById(col);
+      list.innerHTML = state[col].map(cardHTML).join('');
+      document.getElementById('count-' + col).textContent = state[col].length;
+    });
+    attachAllDragEvents();
+  }
+
+  function attachAllDragEvents() {
+    document.querySelectorAll('.card').forEach(card => {
+      card.addEventListener('dragstart', e => {
+        // Don't drag while editing text
+        if (document.activeElement && document.activeElement.contentEditable === 'true') {
+          e.preventDefault();
+          return;
+        }
+        dragged = card;
+        card.classList.add('dragging');
+      });
+      card.addEventListener('dragend', () => {
+        card.classList.remove('dragging');
+        dragged = null;
+        syncStateFromDOM();
+      });
+    });
+
+    // Inline editing: save on blur
+    document.querySelectorAll('[contenteditable]').forEach(el => {
+      el.addEventListener('focus', () => {
+        el.closest('.card').setAttribute('draggable', 'false');
+      });
+      el.addEventListener('blur', () => {
+        const cardEl = el.closest('.card');
+        cardEl.setAttribute('draggable', 'true');
+        const id = cardEl.dataset.id;
+        const field = el.dataset.field;
+        const value = el.textContent.trim();
+        ['todo', 'progress', 'done'].forEach(col => {
+          const c = state[col].find(c => c.id === id);
+          if (c) {
+            c[field] = value;
+            if (field === 'note') {
+              el.classList.toggle('card-note-empty', !value);
+            }
+          }
+        });
+        saveState();
+      });
+      // Prevent Enter from adding newlines in title
+      el.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && el.dataset.field === 'title') {
+          e.preventDefault();
+          el.blur();
+        }
+      });
+    });
+  }
+
+  document.querySelectorAll('.card-list').forEach(list => {
+    list.addEventListener('dragover', e => {
+      e.preventDefault();
+      list.classList.add('drag-over');
+      if (!dragged) return;
+      const afterEl = getDragAfterElement(list, e.clientY);
+      if (afterEl == null) {
+        list.appendChild(dragged);
+      } else {
+        list.insertBefore(dragged, afterEl);
+      }
+    });
+    list.addEventListener('dragleave', () => list.classList.remove('drag-over'));
+    list.addEventListener('drop', () => list.classList.remove('drag-over'));
+  });
+
+  function getDragAfterElement(container, y) {
+    const cards = [...container.querySelectorAll('.card:not(.dragging)')];
+    return cards.reduce((closest, child) => {
+      const box = child.getBoundingClientRect();
+      const offset = y - box.top - box.height / 2;
+      if (offset < 0 && offset > closest.offset) {
+        return { offset, element: child };
+      } else {
+        return closest;
+      }
+    }, { offset: -Infinity }).element;
+  }
+
+  function syncStateFromDOM() {
+    const lookup = {};
+    ['todo', 'progress', 'done'].forEach(col => state[col].forEach(c => lookup[c.id] = c));
+    ['todo', 'progress', 'done'].forEach(col => {
+      const ids = [...document.getElementById(col).querySelectorAll('.card')].map(el => el.dataset.id);
+      state[col] = ids.map(id => lookup[id]);
+    });
+    ['todo', 'progress', 'done'].forEach(col => {
+      document.getElementById('count-' + col).textContent = state[col].length;
+    });
+    saveState();
+  }
+
+  function deleteCard(id) {
+    ['todo', 'progress', 'done'].forEach(col => {
+      state[col] = state[col].filter(c => c.id !== id);
+    });
+    render();
+    saveState();
+  }
+
+  function addCard(event, col) {
+    if (event.key !== 'Enter') return;
+    const input = event.target;
+    const text = input.value.trim();
+    if (!text) return;
+    state[col].push({ id: 'c' + Date.now(), title: text });
+    input.value = '';
+    render();
+    saveState();
+  }
+
+  loadState();
+</script>
+
+</body>
+</html>
